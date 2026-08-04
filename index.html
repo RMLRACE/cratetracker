@@ -362,25 +362,6 @@
 </div>
 
 <div class="card">
-  <h2>Log a race result <span class="pill" id="raceCounter">🏁 0</span></h2>
-  <div class="card-body">
-    <div class="crate-grid">
-      <button class="crate-btn" data-c="s"><span class="icon icon-s">S</span>Standard</button>
-      <button class="crate-btn" data-c="g"><span class="icon icon-g">G</span>Golden</button>
-      <button class="crate-btn" data-c="p"><span class="icon icon-p">P</span>Platinum</button>
-      <button class="crate-btn" data-c="l"><span class="icon icon-l">L</span>Legendary</button>
-      <button class="crate-btn" data-c="gp"><span class="icon icon-gp">GP</span>GP/Event</button>
-      <button class="crate-btn" data-c="f"><span class="icon icon-f">F</span>Full/Skip</button>
-    </div>
-    <div class="log-wrap" id="logView"><div class="empty">No races logged yet</div></div>
-    <div class="row" style="margin-top:10px;">
-      <button class="btn-ghost" id="undoBtn" style="padding:11px;">↶ Undo</button>
-      <button class="btn-ghost" id="clearBtn" style="padding:11px;">Clear log</button>
-    </div>
-  </div>
-</div>
-
-<div class="card">
   <h2>Which step are you on?</h2>
   <div class="card-body">
     <div class="step-dd" id="stepDD">
@@ -396,19 +377,40 @@
 <div class="card">
   <h2>Prediction</h2>
   <div class="card-body">
-    <div class="predict" id="predictBox">Set a baseline and start logging to see predictions.</div>
-    <button class="btn-primary" id="setBaselineBottom" style="width:100%; margin-top:12px;" disabled>Set / Update Baseline</button>
-    <div class="btn-hint" id="setBaselineBottomHint">Log a Platinum or Legendary crate to enable this</div>
+    <div class="predict" id="predictWrap">
+      <div id="predictBox">Set a baseline and start logging to see predictions.</div>
+      <div class="progress-panel idle" id="progressPanel">
+        <div class="pp-head">
+          <span class="pp-title">Step Progress</span>
+          <span class="pp-count" id="ppCount">—</span>
+        </div>
+        <div class="pbar"><div class="pbar-fill" id="ppFill" style="width:0%"></div></div>
+        <div class="pp-sub" id="ppSub">Set a baseline and pick a step to track progress.</div>
+      </div>
+      <div id="predictRest"></div>
+    </div>
   </div>
 </div>
 
-<div class="progress-panel idle" id="progressPanel">
-  <div class="pp-head">
-    <span class="pp-title">Step Progress</span>
-    <span class="pp-count" id="ppCount">—</span>
+<div class="card">
+  <h2>Log a race result <span class="pill" id="raceCounter">🏁 0</span></h2>
+  <div class="card-body">
+    <div class="crate-grid">
+      <button class="crate-btn" data-c="s"><span class="icon icon-s">S</span>Standard</button>
+      <button class="crate-btn" data-c="g"><span class="icon icon-g">G</span>Golden</button>
+      <button class="crate-btn" data-c="p"><span class="icon icon-p">P</span>Platinum</button>
+      <button class="crate-btn" data-c="l"><span class="icon icon-l">L</span>Legendary</button>
+      <button class="crate-btn" data-c="gp"><span class="icon icon-gp">GP</span>GP/Event</button>
+      <button class="crate-btn" data-c="f"><span class="icon icon-f">F</span>Full/Skip</button>
+    </div>
+    <div class="log-wrap" id="logView"><div class="empty">No races logged yet</div></div>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn-ghost" id="undoBtn" style="padding:11px;">↶ Undo</button>
+      <button class="btn-ghost" id="clearBtn" style="padding:11px;">Clear log</button>
+    </div>
+    <button class="btn-primary" id="setBaselineBottom" style="width:100%; margin-top:12px;" disabled>Set / Update Baseline</button>
+    <div class="btn-hint" id="setBaselineBottomHint">Log a Platinum or Legendary crate to enable this</div>
   </div>
-  <div class="pbar"><div class="pbar-fill" id="ppFill" style="width:0%"></div></div>
-  <div class="pp-sub" id="ppSub">Set a baseline and pick a step to track progress.</div>
 </div>
 
 <div class="card collapsed" id="shareCard">
@@ -714,11 +716,14 @@ function updateSetBaselineButtons(){
 }
 
 function renderPredict(){
+  const wrap = document.getElementById('predictWrap');
   const box = document.getElementById('predictBox');
+  const rest = document.getElementById('predictRest');
   updateSetBaselineButtons();
   if(state.startWin === null){
-    box.className = 'predict';
+    wrap.className = 'predict';
     box.innerHTML = 'Set a baseline and start logging to see predictions.';
+    rest.innerHTML = '';
     return;
   }
   const rows = computeSeries();
@@ -735,16 +740,19 @@ function renderPredict(){
   html += `</div></div>`;
 
   if(hit){
-    box.className = 'predict hit';
+    wrap.className = 'predict hit';
     html += `<strong>🎉 Premium crate detected!</strong><br>`;
     if(message) html += `${message}<br>`;
     if(updateTo !== null && updateTo !== undefined){
       html += `Update your baseline to <strong>${updateTo}</strong> and clear the log — or just tap Set/Update Baseline below, it'll do this for you.`;
     }
   } else {
-    box.className = 'predict';
+    wrap.className = 'predict';
   }
 
+  box.innerHTML = html;
+
+  let restHtml = '';
   if(step){
     const target = STEP_RC[step-1];
     const nextRaceNum = currentRace + 1;
@@ -766,31 +774,31 @@ function renderPredict(){
       nextIcon = iconHtml('unknown'); nextLabel = null; toneType = transition.to;
     }
 
-    html += `<div class="next-race to-${toneType}${close ? ' close' : ''}">`;
-    html += nextIcon;
+    restHtml += `<div class="next-race to-${toneType}${close ? ' close' : ''}">`;
+    restHtml += nextIcon;
     if(nextLabel){
       const premiumHint = (nextCrate === 'premium')
         ? ` 🎉`
         : ` · ${premiumName} crate around race ${target}${distance>0?` (${distance} to go)`:''}`;
-      html += `<span>Next up: <strong>race ${nextRaceNum}</strong> → <strong>${nextLabel}</strong>${premiumHint}</span>`;
+      restHtml += `<span>Next up: <strong>race ${nextRaceNum}</strong> → <strong>${nextLabel}</strong>${premiumHint}</span>`;
     } else {
       // step not yet mapped: fall back to premium-distance messaging
-      html += `<span>Next up: <strong>race ${nextRaceNum}</strong> · ${premiumName} crate around race ${target}${distance>0?` (${distance} to go)`:''}</span>`;
+      restHtml += `<span>Next up: <strong>race ${nextRaceNum}</strong> · ${premiumName} crate around race ${target}${distance>0?` (${distance} to go)`:''}</span>`;
     }
-    html += `</div>`;
+    restHtml += `</div>`;
 
     // Upcoming crates strip — direct continuation of "Next up", so it reads as
     // one idea (this next race, and the ones right after it) rather than a
     // separate section further down the card.
-    html += buildUpcomingHtml(step, nextRaceNum, target, transition);
+    restHtml += buildUpcomingHtml(step, nextRaceNum, target, transition);
 
     // step-specific advisory note from the sheet (Steps 1 & 3)
     if(STEP_NOTES[step]){
-      html += `<div class="step-note">⚠️ ${STEP_NOTES[step]}</div>`;
+      restHtml += `<div class="step-note">⚠️ ${STEP_NOTES[step]}</div>`;
     }
   }
 
-  box.innerHTML = html;
+  rest.innerHTML = restHtml;
 }
 
 function renderProgress(){
