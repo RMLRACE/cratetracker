@@ -362,25 +362,6 @@
 </div>
 
 <div class="card">
-  <h2>Log a race result <span class="pill" id="raceCounter">🏁 0</span></h2>
-  <div class="card-body">
-    <div class="crate-grid">
-      <button class="crate-btn" data-c="s"><span class="icon icon-s">S</span>Standard</button>
-      <button class="crate-btn" data-c="g"><span class="icon icon-g">G</span>Golden</button>
-      <button class="crate-btn" data-c="p"><span class="icon icon-p">P</span>Platinum</button>
-      <button class="crate-btn" data-c="l"><span class="icon icon-l">L</span>Legendary</button>
-      <button class="crate-btn" data-c="gp"><span class="icon icon-gp">GP</span>GP/Event</button>
-      <button class="crate-btn" data-c="f"><span class="icon icon-f">F</span>Full/Skip</button>
-    </div>
-    <div class="log-wrap" id="logView"><div class="empty">No races logged yet</div></div>
-    <div class="row" style="margin-top:10px;">
-      <button class="btn-ghost" id="undoBtn" style="padding:11px;">↶ Undo</button>
-      <button class="btn-ghost" id="clearBtn" style="padding:11px;">Clear log</button>
-    </div>
-  </div>
-</div>
-
-<div class="card">
   <h2>Which step are you on?</h2>
   <div class="card-body">
     <div class="step-dd" id="stepDD">
@@ -409,6 +390,25 @@
   </div>
   <div class="pbar"><div class="pbar-fill" id="ppFill" style="width:0%"></div></div>
   <div class="pp-sub" id="ppSub">Set a baseline and pick a step to track progress.</div>
+</div>
+
+<div class="card">
+  <h2>Log a race result <span class="pill" id="raceCounter">🏁 0</span></h2>
+  <div class="card-body">
+    <div class="crate-grid">
+      <button class="crate-btn" data-c="s"><span class="icon icon-s">S</span>Standard</button>
+      <button class="crate-btn" data-c="g"><span class="icon icon-g">G</span>Golden</button>
+      <button class="crate-btn" data-c="p"><span class="icon icon-p">P</span>Platinum</button>
+      <button class="crate-btn" data-c="l"><span class="icon icon-l">L</span>Legendary</button>
+      <button class="crate-btn" data-c="gp"><span class="icon icon-gp">GP</span>GP/Event</button>
+      <button class="crate-btn" data-c="f"><span class="icon icon-f">F</span>Full/Skip</button>
+    </div>
+    <div class="log-wrap" id="logView"><div class="empty">No races logged yet</div></div>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn-ghost" id="undoBtn" style="padding:11px;">↶ Undo</button>
+      <button class="btn-ghost" id="clearBtn" style="padding:11px;">Clear log</button>
+    </div>
+  </div>
 </div>
 
 <div class="card collapsed" id="shareCard">
