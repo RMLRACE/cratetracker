@@ -1,6 +1,6 @@
 // CrateTracker service worker — offline-first, cache-first app shell.
 // Bump CACHE_VERSION whenever index.html or icons change to force an update.
-const CACHE_VERSION = 'cratetracker-v12';
+const CACHE_VERSION = 'cratetracker-v13';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,13 +11,20 @@ const APP_SHELL = [
   './icon-maskable-512.png'
 ];
 
-// Install: pre-cache the whole app shell, then activate immediately.
+// Install: pre-cache the whole app shell. Deliberately no skipWaiting() — a
+// new worker stays in "waiting" so the page can offer an update prompt rather
+// than swapping the app out from under whoever is mid-race-log. On a first
+// install there is no active worker, so this still activates immediately.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
       .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
   );
+});
+
+// The page posts this once the user accepts the update prompt.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // Activate: delete any old version caches so updates take effect.

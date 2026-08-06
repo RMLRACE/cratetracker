@@ -328,6 +328,39 @@
     position:fixed; inset:0; width:100vw; height:100vh;
     pointer-events:none; z-index:9999;
   }
+
+  /* "new version ready" toast — shown when a waiting service worker is found */
+  .update-toast{
+    position:fixed; left:50%; bottom:14px; transform:translate(-50%, 140%);
+    z-index:10000; display:flex; align-items:center; gap:10px;
+    width:calc(100% - 24px); max-width:396px;
+    padding:11px 12px; border-radius:12px;
+    background:var(--navy); border:1px solid var(--border);
+    border-left:3px solid var(--red);
+    box-shadow:0 8px 22px rgba(0,0,0,.45);
+    transition:transform .28s ease, opacity .28s ease;
+    opacity:0; pointer-events:none;
+  }
+  .update-toast.show{transform:translate(-50%, 0); opacity:1; pointer-events:auto;}
+  .update-msg{
+    flex:1; font-size:12.5px; font-weight:700; color:var(--text); letter-spacing:.1px;
+  }
+  .update-toast button{
+    flex:0 0 auto; text-transform:uppercase; letter-spacing:.4px;
+  }
+  .update-toast .update-btn{
+    padding:8px 14px; font-size:11.5px;
+    background:linear-gradient(180deg, var(--red), var(--red-dark));
+    box-shadow:0 3px 0 #7a000e;
+  }
+  .update-toast .update-btn:active{transform:translateY(2px); box-shadow:none;}
+  .update-toast .update-dismiss{
+    padding:8px 10px; font-size:12px; background:var(--navy3);
+    border:1px solid var(--border); color:var(--muted);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .update-toast{transition:none;}
+  }
 </style>
 </head>
 <body>
@@ -431,6 +464,12 @@
 
 <div class="footer-note">
   Ported from "Track &amp; find Premium Crates" by TR The Flash · simplified icons · works fully offline · add to Home Screen for one-tap access.
+</div>
+
+<div class="update-toast" id="updateToast" role="status" aria-live="polite">
+  <span class="update-msg">New version available</span>
+  <button class="update-btn" id="updateNow">Update</button>
+  <button class="update-dismiss" id="updateDismiss" aria-label="Dismiss update">✕</button>
 </div>
 
 <script>
@@ -1066,10 +1105,56 @@ if(state.startWin !== null){
 renderAll();
 </script>
 <script>
-// Register the service worker for offline support (PWA).
+// Register the service worker for offline support (PWA), and surface a prompt
+// when a new version is waiting so the user isn't stuck on a stale cached app.
 if ('serviceWorker' in navigator) {
+  // Whether a worker already controlled this page at load time. On a first
+  // ever install there is none, and the claim that follows must not reload.
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+
+  const toast = document.getElementById('updateToast');
+  const hideToast = () => toast.classList.remove('show');
+
+  function offerUpdate(worker){
+    // Only an update if something was already serving this page.
+    if(!worker || !hadController) return;
+    toast.classList.add('show');
+    document.getElementById('updateNow').onclick = () => {
+      hideToast();
+      worker.postMessage({ type: 'SKIP_WAITING' });
+    };
+    document.getElementById('updateDismiss').onclick = hideToast;
+  }
+
+  // The new worker calls clients.claim() once activated — reload to pick up
+  // the fresh app shell it now serves.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(!hadController || reloading) return;
+    reloading = true;
+    window.location.reload();
+  });
+
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('service-worker.js')
+      .then((reg) => {
+        // A worker may already be waiting from an earlier visit.
+        if(reg.waiting) offerUpdate(reg.waiting);
+
+        reg.addEventListener('updatefound', () => {
+          const installing = reg.installing;
+          if(!installing) return;
+          installing.addEventListener('statechange', () => {
+            if(installing.state === 'installed') offerUpdate(reg.waiting || installing);
+          });
+        });
+
+        // Home-screen PWAs can stay open for days — re-check on every return
+        // to the app rather than only on a cold start.
+        document.addEventListener('visibilitychange', () => {
+          if(document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+      })
       .catch((err) => console.warn('SW registration failed:', err));
   });
 }
