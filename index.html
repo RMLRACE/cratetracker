@@ -426,7 +426,7 @@
 </div>
 
 <div class="card">
-  <h2>Log a race result <span style="display:flex;gap:6px"><span class="pill" id="raceCounter">🏁 0</span><span class="pill" id="totalRaceCounter" title="Total races logged (all-time)">🏆 0</span></span></h2>
+  <h2>Log a race result <span style="display:flex;gap:6px"><span class="pill" id="raceCounter">🏁 0</span><span class="pill" id="totalRaceCounter" title="Total race wins">🏆 0</span></span></h2>
   <div class="card-body">
     <div class="crate-grid">
       <button class="crate-btn" data-c="s"><span class="icon icon-s">S</span>Standard</button>
@@ -544,7 +544,7 @@ function loadState(){
     const raw = localStorage.getItem(STORE_KEY);
     if(raw) return JSON.parse(raw);
   }catch(e){}
-  return { startWin:null, entries:[], activeStep:0, baselineType:null, totalRacesLogged:0 };
+  return { startWin:null, entries:[], activeStep:0, baselineType:null };
 }
 function saveState(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
 
@@ -719,7 +719,10 @@ function renderLog(){
   const rows = computeSeries();
   const view = document.getElementById('logView');
   document.getElementById('raceCounter').textContent = '🏁 ' + (rows.length ? rows[rows.length-1].race : 0);
-  document.getElementById('totalRaceCounter').textContent = '🏆 ' + (state.totalRacesLogged || 0);
+  // Total race wins — the in-game win count. Tracks the latest logged win, or
+  // the baseline itself before anything is logged against it.
+  const wins = rows.length ? rows[rows.length-1].win : state.startWin;
+  document.getElementById('totalRaceCounter').textContent = '🏆 ' + (wins !== null ? wins : 0);
   if(!rows.length){
     view.innerHTML = '<div class="empty">No races logged yet</div>';
     return;
@@ -1073,7 +1076,6 @@ document.querySelectorAll('.crate-btn').forEach(btn => {
     }
     const c = btn.dataset.c;
     state.entries.push(c);
-    state.totalRacesLogged = (state.totalRacesLogged || 0) + 1;
     saveState();
     renderAll();
     // celebrate a recorded premium crate — Platinum or Legendary
